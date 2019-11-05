@@ -4,10 +4,10 @@
 #include <pthread.h>
 
 
-#define PNE 1 //numero de pessoas com necessidades especiais
-#define PREF 2  //numero de pessoas preferenciais 
-#define NG 2 //numero de pessoas que não se encaixam nos requisitos acima (geral)
-#define capacidadeSALA 2 //numero de capacidade sala disponíveis na sala
+#define PNE 3 //numero de pessoas com necessidades especiais
+#define PREF 5  //numero de pessoas preferenciais 
+#define NG 8 //numero de pessoas que não se encaixam nos requisitos acima (geral)
+#define capacidadeSALA 3 //numero de capacidade sala disponíveis na sala
 #define numeroSALA 3 //numero de salas na exposição
 
 void * especiais(void * meuid); //declaração de protipagem da função
@@ -21,9 +21,9 @@ pthread_cond_t geral_cond = PTHREAD_COND_INITIALIZER;
 
 // numero de capacidade sala ocupados e numero de pessoas querendo entrar na sala
 int numOCUPADOS[numeroSALA]; 
-int numPNE = 0;
-int numPREF = 0;
-int numGERAL = 0;
+int numPNE[numeroSALA];
+int numPREF[numeroSALA];
+int numGERAL[numeroSALA];
 
 
 int main(int argc, char *argv[]){
@@ -33,9 +33,19 @@ int main(int argc, char *argv[]){
   for(j = 0; j < numeroSALA; j++)
     numOCUPADOS[j] = 0;
 
+  for(j = 0; j < numeroSALA; j++)
+    numPNE[j] = 0;
+
+  for(j = 0; j < numeroSALA; j++)
+    numPREF[j] = 0;
+
+  for(j = 0; j < numeroSALA; j++)
+    numGERAL[j] = 0;
+
   int erro;
   int i; //contador pra for's
   int *id; //id da thread
+  pthread_t princ;
 
   pthread_t tPNE[PNE]; //cria thread
   for (i = 0; i < PNE; i++){ //cria pne threads
@@ -75,36 +85,36 @@ int main(int argc, char *argv[]){
       exit(1);
     }
   }
-  pthread_join(tPNE[0],NULL);
+
+  for(j = 0; j < NG; j++){
+    pthread_join(tNG[j],NULL);
+  }
   return 0;
 } 
 
 void * especiais (void* pid){
-  int salaAtual = 1;
+  int salaAtual = 0;
   while(1){
-    //sleep(2);
     pthread_mutex_lock(&mutex);
     printf("Pessoa PNE %d: Estou na fila da sala %d da exposição.  \n", *(int *)(pid), salaAtual);
-    numPNE++;
+    numPNE[salaAtual]++;
     while(numOCUPADOS[salaAtual] == capacidadeSALA) {
-      //printf("Especiais %d: Vou aguardar um assento \n", *(int *)(pid));
       pthread_cond_wait(&pne_cond,&mutex);
     }
-    numPNE--;
+    numPNE[salaAtual]--;
     numOCUPADOS[salaAtual]++;
-    printf("Pessoa PNE %d: Entrei na sala %d. Numº pessoas na sala de exposição = %d, Numº PNE na fila = %d, Numº PREF na fila = %d, Numº Geral na fila = %d\n", *(int *)(pid), salaAtual, numOCUPADOS[salaAtual],numPNE,numPREF,numGERAL);
+    printf("Pessoa PNE %d: Entrei na sala %d. Numº pessoas na sala de exposição = %d, Numº PNE na fila = %d, Numº PREF na fila = %d, Numº Geral na fila = %d\n", *(int *)(pid), salaAtual, numOCUPADOS[salaAtual],numPNE[salaAtual],numPREF[salaAtual],numGERAL[salaAtual]);
     pthread_mutex_unlock(&mutex);
 
     sleep(5); 
   
     pthread_mutex_lock(&mutex);
     numOCUPADOS[salaAtual]--; 
-    printf("Pessoa PNE %d: Saí da sala %d. Numº pessoas na sala da exposição = %d\n", *(int *)(pid), salaAtual, numOCUPADOS[salaAtual]);
+    printf("Pessoa PNE %d: Saí da sala %d. Numº pessoas na sala da exposição %d = %d\n", *(int *)(pid), salaAtual, salaAtual, numOCUPADOS[salaAtual]);
     salaAtual++;
 
-    if(salaAtual == numeroSALA + 1){
+    if(salaAtual == numeroSALA){
       pthread_mutex_unlock(&mutex);
-      sleep(2);
       pthread_exit(NULL);
     }
     pthread_cond_signal(&pne_cond);
@@ -118,31 +128,28 @@ void * especiais (void* pid){
 
 
 void * preferencial (void* pid){
-  int salaAtual = 1;
+  int salaAtual = 0;
   while(1){
-    //sleep(2);
     pthread_mutex_lock(&mutex);
     printf("Pessoa Preferencial %d: Estou na fila da sala %d da exposição. \n", *(int *)(pid), salaAtual);
-    numPREF++;
-    while(numOCUPADOS[salaAtual] == capacidadeSALA || numPNE > 0) {
-      //printf("Preferencial %d: Vou aguardar um assento \n", *(int *)(pid));
+    numPREF[salaAtual]++;
+    while(numOCUPADOS[salaAtual] == capacidadeSALA || numPNE[salaAtual] > 0) {
       pthread_cond_wait(&pref_cond,&mutex);
     }
-    numPREF--;
+    numPREF[salaAtual]--;
     numOCUPADOS[salaAtual]++;
-    printf("Pessoa Preferencial %d: Entrei na sala %d. Numº pessoas na sala de exposição = %d, Numº PNE na fila = %d, Numº PREF na fila = %d, Numº Geral na fila = %d\n", *(int *)(pid), salaAtual,numOCUPADOS[salaAtual],numPNE,numPREF,numGERAL);
+    printf("Pessoa Preferencial %d: Entrei na sala %d. Numº pessoas na sala de exposição = %d, Numº PNE na fila = %d, Numº PREF na fila = %d, Numº Geral na fila = %d\n", *(int *)(pid), salaAtual,numOCUPADOS[salaAtual],numPNE[salaAtual],numPREF[salaAtual],numGERAL[salaAtual]);
     pthread_mutex_unlock(&mutex);
 
-    sleep(4); 
+    sleep(5); 
 
     pthread_mutex_lock(&mutex);  
     numOCUPADOS[salaAtual]--; 
-    printf("Pessoa Preferencial %d: Saí da sala %d. Numº pessoas na sala da exposição = %d\n", *(int *)(pid), salaAtual, numOCUPADOS[salaAtual]);
+    printf("Pessoa Preferencial %d: Saí da sala %d. Numº pessoas na sala da exposição %d = %d\n", *(int *)(pid), salaAtual, salaAtual, numOCUPADOS[salaAtual]);
     salaAtual++;
 
-    if(salaAtual == numeroSALA + 1){
+    if(salaAtual == numeroSALA){
       pthread_mutex_unlock(&mutex);
-      sleep(2);
       pthread_exit(NULL);
     }
     pthread_cond_signal(&pne_cond);
@@ -156,32 +163,29 @@ void * preferencial (void* pid){
 
 
 void * geral (void* pid){
-  int salaAtual = 1;
+  int salaAtual = 0;
   while(1){
-    //sleep(2);
     pthread_mutex_lock(&mutex);
     printf("Pessoa Geral %d: Estou na fila da sala %d da exposição.  \n", *(int *)(pid), salaAtual);
      
-    numGERAL++;
-    while(numOCUPADOS[salaAtual] == capacidadeSALA || numPNE > 0 || numPREF > 0) {
-      //printf("Pessoa Geral %d: Vou aguardar um assento \n", *(int *)(pid));
+    numGERAL[salaAtual]++;
+      while(numOCUPADOS[salaAtual] == capacidadeSALA || numPNE[salaAtual] > 0 || numPREF[salaAtual] > 0) {
       pthread_cond_wait(&geral_cond,&mutex);
     }
-    numGERAL--;
+    numGERAL[salaAtual]--;
     numOCUPADOS[salaAtual]++;
-    printf("Pessoa Geral %d: Entrei na sala %d. Numº pessoas na sala de exposição = %d, Numº PNE na fila = %d, Numº PREF na fila = %d, Numº Geral na fila = %d\n", *(int *)(pid), salaAtual, numOCUPADOS[salaAtual],numPNE,numPREF,numGERAL);
+    printf("Pessoa Geral %d: Entrei na sala %d. Numº pessoas na sala de exposição = %d, Numº PNE na fila = %d, Numº PREF na fila = %d, Numº Geral na fila = %d\n", *(int *)(pid), salaAtual, numOCUPADOS[salaAtual],numPNE[salaAtual],numPREF[salaAtual],numGERAL[salaAtual]);
     pthread_mutex_unlock(&mutex);
 
     sleep(5); 
   
     pthread_mutex_lock(&mutex);
     numOCUPADOS[salaAtual]--; 
-    printf("Pessoa Geral %d: Saí da sala %d. Numº pessoas na sala de exposição = %d\n", *(int *)(pid), salaAtual, numOCUPADOS[salaAtual]);
+    printf("Pessoa Geral %d: Saí da sala %d. Numº pessoas na sala de exposição %d = %d\n", *(int *)(pid), salaAtual, salaAtual, numOCUPADOS[salaAtual]);
     salaAtual++;
 
-    if(salaAtual == numeroSALA + 1){
+    if(salaAtual == numeroSALA){
       pthread_mutex_unlock(&mutex);
-      sleep(2);
       pthread_exit(NULL);
     }
     pthread_cond_signal(&pne_cond);
