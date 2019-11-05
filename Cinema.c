@@ -26,15 +26,15 @@ int numGERAL = 0;
 int main(int argc, char *argv[]){
 
   int erro;
-  int i, n, m;
-  int *id;
+  int i; //contador pra for's
+  int *id; //id da thread
 
-  pthread_t tP[PNE];
+  pthread_t tPNE[PNE]; //cria thread
   for (i = 0; i < PNE; i++)
   {
     id = (int *) malloc(sizeof(int));
     *id = i;
-    erro = pthread_create(&tP[i], NULL, especiais, (void *) (id));
+    erro = pthread_create(&tPNE[i], NULL, especiais, (void *) (id));
 
     if(erro)
     {
@@ -44,12 +44,12 @@ int main(int argc, char *argv[]){
   }
 
 
-  pthread_t tA[PREF];
+  pthread_t tPREF[PREF];
   for (i = 0; i < PREF; i++)
   {
     id = (int *) malloc(sizeof(int));
     *id = i;
-    erro = pthread_create(&tA[i], NULL, preferencial, (void *) (id));
+    erro = pthread_create(&tPREF[i], NULL, preferencial, (void *) (id));
 
     if(erro)
     {
@@ -57,20 +57,20 @@ int main(int argc, char *argv[]){
       exit(1);
     }
   }
-  pthread_t tF[NG];
+  pthread_t tNG[NG];
   for (i = 0; i < NG; i++){
     id = (int *) malloc(sizeof(int));
     *id = i;
-    erro = pthread_create(&tF[i], NULL, geral, (void *) (id));
+    erro = pthread_create(&tNG[i], NULL, geral, (void *) (id));
     if(erro)
     {
       printf("erro na criacao do thread %d\n", i);
       exit(1);
     }
   }
-  pthread_join(tP[0],NULL);
+  pthread_join(tPNE[0],NULL);
   return 0;
-}	
+} 
 
 void * especiais (void* pi){
   while(1){
