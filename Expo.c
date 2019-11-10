@@ -1,6 +1,9 @@
 /*
 Nomes dos Integrantes: Guilherme Andreuce, Maria Fernanda do Carmo e Rômulo de Vasconcelos
 Matrículas: , 14/0153641, 14/0031260
+Descrição: Implementação concorrente de uma exposição de obras aonde as pessoas passam de uma sala para outra,
+passando primeiramente por uma fila, com prioridades de entrada diferentes, e cada fila contendo um garçom com
+um número limitado de águas disponíveis, as quais quem chega primeiro obtém e quem não chega a tempo fica sem
 */
 
 #include <stdio.h>
@@ -8,12 +11,12 @@ Matrículas: , 14/0153641, 14/0031260
 #include <unistd.h>
 #include <pthread.h>
 
-#define PNE 1 //numero de pessoas com necessidades especiais
-#define PREF 2  //numero de pessoas preferenciais 
-#define NG 2 //numero de pessoas que não se encaixam nos requisitos acima (geral)
+#define PNE 2 //numero de pessoas com necessidades especiais
+#define PREF 3  //numero de pessoas preferenciais 
+#define NG 4 //numero de pessoas que não se encaixam nos requisitos acima (geral)
 #define CAPACIDADESALA 2 //numero de capacidade sala disponíveis na sala
-#define NUMEROSALA 2 //numero de salas na exposição
-#define COPOSAGUA 1 //numero de copos d'agua que o garçom tem 
+#define NUMEROSALA 3 //numero de salas na exposição
+#define COPOSAGUA 3 //numero de copos d'agua que o garçom tem 
 
 void * especiais(void * meuid); //declaração de protipagem da função
 void * preferencial (void * meuid); //declaração de protipagem da função
@@ -136,7 +139,11 @@ void * especiais (void* pid){
     printf("Pessoa PNE %d: Saí da sala %d. Numº pessoas na sala da exposição %d = %d\n", *(int *)(pid), salaAtual, salaAtual, numOCUPADOS[salaAtual]);
     salaAtual++; //passa para a próxima sala
 
-    if(salaAtual == NUMEROSALA){ //se chega ao fim da exposição, libera o mutex e termina sua execução
+    if(salaAtual == NUMEROSALA){ //se chega ao fim da exposição, envia os sinais, libera o mutex e termina sua execução
+      printf("\nPessoa PNE %d chegou ao fim da exposição\n\n", *(int *)(pid));
+      pthread_cond_signal(&pne_cond);
+      pthread_cond_signal(&pref_cond);
+      pthread_cond_signal(&geral_cond);
       pthread_mutex_unlock(&mutex);
       pthread_exit(NULL);
     }else{ //se não está na ultima sala, envia um sinal para que uma outra thread possa ser executada e libera o mutex
@@ -179,6 +186,10 @@ void * preferencial (void* pid){
     salaAtual++;
 
     if(salaAtual == NUMEROSALA){
+      printf("\nPessoa Preferencia %d chegou ao fim da exposição\n\n", *(int *)(pid));
+      pthread_cond_signal(&pne_cond);
+      pthread_cond_signal(&pref_cond);
+      pthread_cond_signal(&geral_cond);
       pthread_mutex_unlock(&mutex);
       pthread_exit(NULL);
     }else{
@@ -222,6 +233,10 @@ void * geral (void* pid){
     salaAtual++;
 
     if(salaAtual == NUMEROSALA){
+      printf("\nPessoa Geral %d chegou ao fim da exposição\n\n", *(int *)(pid));
+      pthread_cond_signal(&pne_cond);
+      pthread_cond_signal(&pref_cond);
+      pthread_cond_signal(&geral_cond);
       pthread_mutex_unlock(&mutex);
       pthread_exit(NULL);
     }else{
