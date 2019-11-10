@@ -1,6 +1,6 @@
 /*
 Nomes dos Integrantes: Guilherme Andreuce, Maria Fernanda do Carmo e Rômulo de Vasconcelos
-Matrículas: , 14/0153641, 14/0031260
+Matrículas: 14/0141961, 14/0153641, 14/0031260
 Descrição: Implementação concorrente de uma exposição de obras aonde as pessoas passam de uma sala para outra,
 passando primeiramente por uma fila, com prioridades de entrada diferentes, e cada fila contendo um garçom com
 um número limitado de águas disponíveis, as quais quem chega primeiro obtém e quem não chega a tempo fica sem
