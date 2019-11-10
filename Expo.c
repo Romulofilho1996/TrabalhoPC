@@ -1,3 +1,8 @@
+/*
+Nomes dos Integrantes: Guilherme Andreuce, Maria Fernanda do Carmo e Rômulo de Vasconcelos
+Matrículas: , 14/0153641, 14/0031260
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
